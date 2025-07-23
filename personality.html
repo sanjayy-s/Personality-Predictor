@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Personality Identifier</title>
+
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Merriweather&family=Orbitron:wght@600&family=Roboto+Mono&display=swap" rel="stylesheet">
+
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Roboto Mono', monospace;
+      background-image: url('https://www.wallpapergap.com/cdn/24/2/dark-ambient-wallpapers-1920x1200.jpg');
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      background-attachment: fixed;
+      color: #fff;
+    }
+
+    h1 {
+      font-family: 'Orbitron', sans-serif;
+      text-align: center;
+      font-size: 3em;
+      margin-top: 30px;
+      color: #000000;
+      text-shadow: 2px 2px 4px #fff;
+    }
+
+    #inputSection {
+      margin: 30px auto;
+      width: 80%;
+      background-color: rgba(0, 0, 0, 0.6);
+      padding: 20px;
+      border-radius: 10px;
+    }
+
+    textarea {
+      width: 100%;
+      height: 200px;
+      font-size: 16px;
+      font-family: 'Roboto Mono', monospace;
+      padding: 10px;
+      box-sizing: border-box;
+      border-radius: 5px;
+      border: none;
+      resize: vertical;
+    }
+
+    button {
+      margin-top: 10px;
+      padding: 12px 25px;
+      font-size: 16px;
+      font-family: 'Orbitron', sans-serif;
+      background-color: #000000;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+
+    button:hover {
+      background-color: #222222;
+    }
+
+    #outputSection {
+      margin: 30px auto;
+      padding: 20px;
+      width: 80%;
+      background-color: rgba(255, 255, 255, 0.85);
+      color: #222;
+      border-radius: 10px;
+      font-family: 'Merriweather', serif;
+    }
+
+    #outputText {
+      margin-top: 10px;
+      font-size: 1.1em;
+    }
+
+    label {
+      font-size: 1.1em;
+      font-weight: bold;
+      color: #000000;
+    }
+  </style>
+</head>
+<body>
+  <h1>Personality Identifier</h1>
+
+  <div id="inputSection">
+    <label for="inputText">Enter Text:</label><br>
+    <textarea id="inputText" placeholder="Type your personality-revealing text here..."></textarea><br>
+    <button onclick="processInput()">Identify Personality</button>
+  </div>
+
+  <div id="outputSection">
+    <h3>Output:</h3>
+    <div id="outputText">Your personality analysis will appear here.</div>
+  </div>
+
+  <script>
+  const personalityDescriptions = {
+    "INTJ": "INTJ (Architect) – Imaginative and strategic thinkers, with a plan for everything.",
+    "INTP": "INTP (Logician) – Innovative inventors with an unquenchable thirst for knowledge.",
+    "ENTJ": "ENTJ (Commander) – Bold, imaginative, strong-willed leaders.",
+    "ENTP": "ENTP (Debater) – Smart and curious thinkers who enjoy intellectual challenges.",
+    "INFJ": "INFJ (Advocate) – Quiet and mystical, inspiring idealists.",
+    "INFP": "INFP (Mediator) – Poetic, kind, and altruistic, always eager to help a good cause.",
+    "ENFJ": "ENFJ (Protagonist) – Charismatic leaders, inspiring and motivating others.",
+    "ENFP": "ENFP (Campaigner) – Enthusiastic, creative, and sociable free spirits.",
+    "ISTJ": "ISTJ (Logistician) – Practical and fact-minded individuals, reliable and responsible.",
+    "ISFJ": "ISFJ (Defender) – Protective and warm, devoted to helping others.",
+    "ESTJ": "ESTJ (Executive) – Organized leaders who value tradition and order.",
+    "ESFJ": "ESFJ (Consul) – Caring, social, and popular, eager to please and support others.",
+    "ISTP": "ISTP (Virtuoso) – Bold and practical experimenters, masters of tools and techniques.",
+    "ISFP": "ISFP (Adventurer) – Flexible and charming artists, always exploring new experiences.",
+    "ESTP": "ESTP (Entrepreneur) – Energetic and perceptive, love taking action.",
+    "ESFP": "ESFP (Entertainer) – Spontaneous, fun-loving performers who enjoy life to the fullest."
+  };
+
+  async function processInput() {
+    const input = document.getElementById('inputText').value;
+    const output = document.getElementById('outputText');
+
+    if (input.trim() === "") {
+      output.innerText = "Please enter some text to analyze.";
+      return;
+    }
+
+    output.innerText = "Analyzing personality traits...";
+
+    try {
+      const response = await fetch('http://127.0.0.1:5000/predict', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: input }),
+      });
+
+      if (!response.ok) throw new Error("Server error");
+
+      const data = await response.json();
+      const type = data.prediction;
+
+      // Lookup description, fallback if unknown
+      const description = personalityDescriptions[type] || `Personality Type: ${type}`;
+      output.innerText = description;
+
+    } catch (error) {
+      output.innerText = "Error: Could not connect to prediction server.";
+      console.error(error);
+    }
+  }
+</script>
+
+
+</body>
+</html>
