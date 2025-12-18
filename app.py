@@ -1,34 +1,99 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, render_template
+from flask_cors import CORS
 import joblib
 import re
-from flask_cors import CORS  # Allows frontend JS to talk to Flask
+import os
+from groq import Groq  # Import the official Groq client
 
 app = Flask(__name__)
-CORS(app)  # Enable cross-origin requests
+CORS(app)
 
-# Load model and TF-IDF vectorizer
-model = joblib.load('personality_model.pkl')
-tfidf = joblib.load('vectorizer.pkl')
+# 1. Load your trained models
+try:
+    model = joblib.load('personality_model.pkl')
+    vectorizer = joblib.load('vectorizer.pkl')
+    print("Models loaded successfully.")
+except FileNotFoundError:
+    print("Error: Files not found. Ensure .pkl files are in the directory.")
+
+# ---------------------------------------------------------
+# 2. INITIALIZE GROQ CLIENT
+
+
+# 3. Define Communication Styles
+personality_styles = {
+    "INTJ": "The user is an INTJ. Be logical, strategic, and concise.",
+    "INTP": "The user is an INTP. Be analytical, precise, and abstract.",
+    "ENTJ": "The user is an ENTJ. Be direct, efficient, and commanding.",
+    "ENTP": "The user is an ENTP. Be witty, debate-friendly, and innovative.",
+    "INFJ": "The user is an INFJ. Be empathetic, deep, and insightful.",
+    "INFP": "The user is an INFP. Be gentle, authentic, and imaginative.",
+    "ENFJ": "The user is an ENFJ. Be inspiring, warm, and collaborative.",
+    "ENFP": "The user is an ENFP. Be enthusiastic, creative, and spontaneous.",
+    "ISTJ": "The user is an ISTJ. Be factual, reliable, and structured.",
+    "ISFJ": "The user is an ISFJ. Be supportive, polite, and detailed.",
+    "ESTJ": "The user is an ESTJ. Be practical, organized, and decisive.",
+    "ESFJ": "The user is an ESFJ. Be friendly, helpful, and community-focused.",
+    "ISTP": "The user is an ISTP. Be practical, calm, and solution-focused.",
+    "ISFP": "The user is an ISFP. Be observant, kind, and artistic.",
+    "ESTP": "The user is an ESTP. Be energetic, direct, and action-oriented.",
+    "ESFP": "The user is an ESFP. Be fun, lively, and entertaining."
+}
 
 def clean_post(text):
-    text = text.lower()
-    text = re.sub(r"http\S+", "", text)
-    text = re.sub(r"[^a-z\s]", "", text)
-    text = re.sub(r"\s+", " ", text).strip()
+    if text is None: return ""
+    text = str(text).lower()
+    text = re.sub(r'http\S+', '', text)
+    text = re.sub(r'[^a-z\s]', ' ', text)
+    text = re.sub(r'\s+', ' ', text).strip()
     return text
 
-@app.route('/predict', methods=['POST'])
-def predict():
-    data = request.json
-    user_text = data.get('text', '')
+@app.route('/')
+def home():
+    return render_template('personality.html')
 
-    # Clean and vectorize input
-    cleaned = clean_post(user_text)
-    vectorized = tfidf.transform([cleaned])
+@app.route('/chat', methods=['POST'])
+def chat():
+    data = request.get_json(force=True)
+    user_input = data.get('text', '')
+    
+    # A. Predict Personality
+    cleaned_text = clean_post(user_input)
+    vectorized_text = vectorizer.transform([cleaned_text])
+    predicted_type = model.predict(vectorized_text)[0]
+    
+    # B. Get Style Instruction
+    style_instruction = personality_styles.get(predicted_type, "Be helpful.")
+    
+    # C. Generate Response using GROQ
+    try:
+        completion = client.chat.completions.create(
+            model="moonshotai/kimi-k2-instruct-0905", 
+            messages=[
+                {
+                    "role": "system", 
+                    "content": f"You are a helpful AI assistant. {style_instruction}"
+                },
+                {
+                    "role": "user", 
+                    "content": user_input
+                }
+            ],
+            temperature=0.7,
+            max_tokens=1024,
+            top_p=1,
+        )
+        bot_response = completion.choices[0].message.content
+        
+    except Exception as e:
+        print(f"Groq Error: {e}")
+        bot_response = "I'm having trouble connecting  right now."
 
-    # Predict using the trained model
-    prediction = model.predict(vectorized)[0]
-    return jsonify({'prediction': prediction})
+    return jsonify({
+        'prediction': predicted_type,
+        'response': bot_response
+    })
 
 if __name__ == '__main__':
     app.run(debug=True)
+

@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MBTI Personality Chatbot</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet">
+
+  <style>
+    /* --- CSS Variables for Theme --- */
+    :root {
+      --bg-app: #121212;          /* Main dark background */
+      --bg-panel: #1E1E1E;        /* Sidebar/Header background */
+      --bg-input: #2C2C2C;        /* Input bar background */
+      --bg-bot-bubble: #2C2C2C;   /* Bot message background */
+      --text-primary: #FFFFFF;    /* Main text color */
+      --text-secondary: #A0A0A0;  /* Subtitle/placeholder text */
+      /* The specific gradient from the image for user bubbles */
+      --user-gradient: linear-gradient(135deg, #B25AFF 0%, #FF5AC8 100%);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body, html {
+      height: 100%;
+      font-family: 'Inter', sans-serif;
+      background-color: var(--bg-app);
+      color: var(--text-primary);
+      overflow: hidden; /* Prevent body scroll, handle in chat log */
+    }
+
+    /* --- Main Layout --- */
+    .app-container {
+      display: flex;
+      height: 100vh;
+      max-width: 1200px;
+      margin: 0 auto;
+      background-color: var(--bg-app);
+    }
+
+    /* --- Sidebar (Visual placeholder to match desktop view in image) --- */
+    .sidebar {
+      width: 280px;
+      background-color: var(--bg-panel);
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      border-right: 1px solid #333;
+    }
+
+    .sidebar-header {
+      font-weight: 600;
+      margin-bottom: 20px;
+      color: var(--text-secondary);
+    }
+
+    /* Hide sidebar on smaller screens to match mobile view */
+    @media (max-width: 768px) {
+      .sidebar {
+        display: none;
+      }
+    }
+
+    /* --- Chat Area --- */
+    .chat-main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      background-color: var(--bg-app);
+      position: relative;
+    }
+
+    /* --- Header --- */
+    .chat-header {
+      display: flex;
+      align-items: center;
+      padding: 15px 25px;
+      background-color: var(--bg-panel);
+      border-bottom: 1px solid #333;
+    }
+
+    .header-icon {
+      font-size: 24px;
+      margin-right: 15px;
+      color: #FF5AC8; /* Match sparkle color */
+    }
+
+    .header-title h2 {
+      font-size: 1.1rem;
+      font-weight: 600;
+    }
+
+    .header-title p {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+    }
+
+    /* --- Chat Log (Scrollable Area) --- */
+    .chat-log {
+      flex: 1;
+      overflow-y: auto;
+      padding: 25px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      /* Custom scrollbar styling */
+      scrollbar-width: thin;
+      scrollbar-color: var(--bg-input) var(--bg-app);
+    }
+
+    /* --- Message Bubbles Shared Styles --- */
+    .message-wrapper {
+      display: flex;
+      flex-direction: column;
+      max-width: 80%;
+    }
+
+    .message-bubble {
+      padding: 16px 20px;
+      border-radius: 24px;
+      font-size: 0.95rem;
+      line-height: 1.5;
+      position: relative;
+      word-wrap: break-word;
+    }
+
+    /* --- Bot Message Specifics --- */
+    .bot-wrapper {
+      align-self: flex-start;
+    }
+
+    .bot-bubble {
+      background-color: var(--bg-bot-bubble);
+      color: var(--text-primary);
+      border-bottom-left-radius: 4px; /* Slight squared corner for effect */
+    }
+
+    .personality-label {
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+      margin-bottom: 6px;
+      margin-left: 10px;
+      font-weight: 500;
+    }
+
+    /* Bot Action Icons underneath bubble */
+    .bot-actions {
+      display: flex;
+      gap: 15px;
+      margin-top: 10px;
+      margin-left: 10px;
+      color: var(--text-secondary);
+    }
+    .bot-actions span { font-size: 18px; cursor: pointer; }
+
+    /* --- User Message Specifics --- */
+    .user-wrapper {
+      align-self: flex-end;
+    }
+
+    .user-bubble {
+      /* The distinct gradient background */
+      background: var(--user-gradient);
+      color: white;
+      border-bottom-right-radius: 4px;
+      box-shadow: 0 4px 15px rgba(178, 90, 255, 0.2);
+    }
+
+    /* --- Input Area --- */
+    .input-container {
+      padding: 20px 25px;
+      background-color: var(--bg-app); /* Blend with background */
+    }
+
+    .input-bar {
+      display: flex;
+      align-items: center;
+      background-color: var(--bg-input);
+      padding: 10px 20px;
+      border-radius: 30px; /* Fully rounded pill shape */
+      border: 1px solid #333;
+    }
+
+    .input-field {
+      flex: 1;
+      background: transparent;
+      border: none;
+      color: var(--text-primary);
+      font-size: 1rem;
+      font-family: 'Inter', sans-serif;
+      outline: none;
+    }
+    
+    .input-field::placeholder {
+      color: var(--text-secondary);
+    }
+
+    .send-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-secondary);
+      cursor: pointer;
+      padding: 8px;
+      display: flex;
+      align-items: center;
+      transition: color 0.3s;
+    }
+
+    .send-btn:hover {
+      color: #FF5AC8;
+    }
+
+    /* Loading Dots Animation */
+    .loading-dots span {
+      animation: blink 1.4s infinite both;
+      font-size: 30px;
+      line-height: 0;
+    }
+    .loading-dots span:nth-child(2) { animation-delay: 0.2s; }
+    .loading-dots span:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes blink {
+      0% { opacity: .2; }
+      20% { opacity: 1; }
+      100% { opacity: .2; }
+    }
+
+  </style>
+</head>
+<body>
+
+  <div class="app-container">
+    <div class="sidebar">
+      <div class="sidebar-header">Chat History</div>
+      </div>
+
+    <main class="chat-main">
+      <div class="chat-header">
+        <span class="material-icons-outlined header-icon">auto_awesome</span>
+        <div class="header-title">
+          <h2>MBTI ChatAssist</h2>
+          <p>Personalized AI Responses</p>
+        </div>
+      </div>
+
+      <div id="chat-log" class="chat-log">
+        <div class="message-wrapper bot-wrapper">
+          <div class="bot-bubble message-bubble">
+            Hello! I am an AI trained to detect personality types. Tell me something about yourself, and I will respond based on the personality I detect!
+          </div>
+        </div>
+      </div>
+
+      <div class="input-container">
+        <div class="input-bar">
+          <input type="text" id="userInput" class="input-field" placeholder="Type a message..." autocomplete="off">
+          <button onclick="sendMessage()" class="send-btn">
+            <span class="material-icons-outlined">send</span>
+          </button>
+        </div>
+      </div>
+    </main>
+  </div>
+
+
+  <script>
+    const chatLog = document.getElementById('chat-log');
+    const userInputField = document.getElementById('userInput');
+
+    // Allow submitting with Enter key
+    userInputField.addEventListener("keypress", function(event) {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        sendMessage();
+      }
+    });
+
+    function appendMessage(sender, text, personalityLabel = null, isLoading = false) {
+        const wrapperDiv = document.createElement('div');
+        wrapperDiv.className = `message-wrapper ${sender}-wrapper`;
+
+        let htmlContent = '';
+
+        if (sender === 'bot') {
+             if (personalityLabel) {
+                 htmlContent += `<div class="personality-label">Detected: ${personalityLabel}</div>`;
+             }
+             htmlContent += `<div class="bot-bubble message-bubble">`;
+             if (isLoading) {
+                 htmlContent += `<div class="loading-dots"><span>.</span><span>.</span><span>.</span></div>`;
+             } else {
+                 htmlContent += text;
+             }
+             htmlContent += `</div>`;
+             // Add visual-only icons below bot message to match image
+             if (!isLoading) {
+                 htmlContent += `
+                 <div class="bot-actions">
+                    <span class="material-icons-outlined" style="font-size: 18px;">content_copy</span>
+                    <span class="material-icons-outlined" style="font-size: 18px;">thumb_up</span>
+                    <span class="material-icons-outlined" style="font-size: 18px;">thumb_down</span>
+                 </div>`;
+             }
+
+        } else {
+            // User message
+            htmlContent = `<div class="user-bubble message-bubble">${text}</div>`;
+        }
+
+        wrapperDiv.innerHTML = htmlContent;
+        chatLog.appendChild(wrapperDiv);
+        // Scroll to bottom
+        chatLog.scrollTop = chatLog.scrollHeight;
+        return wrapperDiv; // Return it in case we need to remove it (like loading placeholder)
+    }
+
+
+    async function sendMessage() {
+      const text = userInputField.value.trim();
+      if (text === "") return;
+
+      // 1. Append User Message immediately
+      appendMessage('user', text);
+      userInputField.value = '';
+
+      // 2. Append Loading placeholder
+      const loadingDiv = appendMessage('bot', null, null, true);
+
+      try {
+        const response = await fetch('http://127.0.0.1:5000/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: text }),
+        });
+
+        if (!response.ok) throw new Error("Server error");
+        const data = await response.json();
+
+        // 3. Remove loading placeholder
+        chatLog.removeChild(loadingDiv);
+
+        // 4. Append Actual Bot Response
+        // We use data.prediction for the label above the bubble
+        appendMessage('bot', data.response, data.prediction);
+
+      } catch (error) {
+        chatLog.removeChild(loadingDiv);
+        appendMessage('bot', "Sorry, I couldn't connect to the server.");
+        console.error(error);
+      }
+    }
+  </script>
+
+</body>
+</html>
