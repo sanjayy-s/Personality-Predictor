@@ -18,6 +18,7 @@ except FileNotFoundError:
 
 # ---------------------------------------------------------
 # 2. INITIALIZE GROQ CLIENT
+client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
 
 
 # 3. Define Communication Styles
